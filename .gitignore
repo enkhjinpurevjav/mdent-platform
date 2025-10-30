@@ -1,0 +1,9 @@
+# Node / Vite
+node_modules/
+dist/
+*.log
+
+# Env files (never commit secrets)
+.env
+.env.local
+.env.*.local
