@@ -2,7 +2,7 @@
 set -e
 
 echo "[backend] Prisma generate (runtime) ..."
-npx prisma generate || echo "[backend] prisma generate failed, continuing (will fail at query-time if not resolved)"
+npx prisma generate || echo "[backend] prisma generate failed, continuing"
 
 echo "[backend] Running prisma migrate deploy ..."
 npx prisma migrate deploy || echo "[backend] migrate deploy failed or no migrations yet"
