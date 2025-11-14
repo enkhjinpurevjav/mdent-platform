@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  RECEPTIONIST
+  ACCOUNTANT
+}
+
+model Branch {
+  id           String        @id @default(cuid())
+  name         String
+  address      String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  users        User[]
+  patients     Patient[]
+  appointments Appointment[]
+  bookings     Booking[]
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String?    @unique
+  phone        String?
+  role         Role
+  branchId     String?
+  passwordHash String
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  branch       Branch?    @relation(fields: [branchId], references: [id])
+  appointments Appointment[]
+  bookings     Booking[]
+
+  @@index([branchId])
+  @@index([role])
+}
+
+model Patient {
+  id         String   @id @default(cuid())
+  regNo      String   @unique
+  name       String
+  phone      String
+  branchId   String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  book       PatientBook?
+
+  @@index([branchId])
+  @@index([phone])
+}
+
+model PatientBook {
+  id         String   @id @default(cuid())
+  patientId  String   @unique
+  bookNumber Int      @unique
+  createdAt  DateTime @default(now())
+
+  patient    Patient  @relation(fields: [patientId], references: [id])
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  branchId  String
+  doctorId  String
+  start     DateTime
+  end       DateTime
+  status    AppointmentStatus @default(BOOKED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id])
+  doctor User   @relation(fields: [doctorId], references: [id])
+
+  @@index([branchId, start])
+  @@index([doctorId, start])
+}
+
+enum AppointmentStatus {
+  BOOKED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+/* Week 1 keeps booking minimal (placeholder for Week 4+) */
+model Booking {
+  id                 String        @id @default(cuid())
+  branchId           String
+  doctorId           String
+  procedureId        String?
+  slotStart          DateTime
+  slotEnd            DateTime
+  patientName        String
+  phone              String
+  status             BookingStatus @default(PENDING_OTP)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  branch   Branch @relation(fields: [branchId], references: [id])
+  doctor   User   @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId, slotStart])
+  @@index([branchId, slotStart])
+}
+
+enum BookingStatus {
+  PENDING_OTP
+  OTP_VERIFIED
+  HOLD_PLACED
+  CONFIRMED
+  CANCELLED
+}
