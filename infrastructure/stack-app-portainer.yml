@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: mdent
+      POSTGRES_PASSWORD: mdent
+      POSTGRES_DB: mdent
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://mdent:mdent@db:5432/mdent?schema=public}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: "8080"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      NODE_ENV: ${NODE_ENV:-production}
+      RUN_SEED: ${RUN_SEED:-false}
+      QPAY_CLIENT_ID: ${QPAY_CLIENT_ID:-}
+      QPAY_SECRET: ${QPAY_SECRET:-}
+      EBARIMT_API_KEY: ${EBARIMT_API_KEY:-}
+      OTP_PROVIDER_KEY: ${OTP_PROVIDER_KEY:-}
+      RATE_LIMIT_PUBLIC: ${RATE_LIMIT_PUBLIC:-100}
+      RATE_LIMIT_INTERNAL: ${RATE_LIMIT_INTERNAL:-1000}
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.mdent.cloud}
+      NEXT_PUBLIC_PORTAL_URL: ${NEXT_PUBLIC_PORTAL_URL:-https://book.mdent.cloud}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  portal:
+    build:
+      context: ../portal
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.mdent.cloud}
+      NEXT_PUBLIC_CAPTCHA_KEY: ${NEXT_PUBLIC_CAPTCHA_KEY:-placeholder}
+      NEXT_PUBLIC_BOOKING_FLOW_VERSION: ${NEXT_PUBLIC_BOOKING_FLOW_VERSION:-1}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+      - portal
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:
