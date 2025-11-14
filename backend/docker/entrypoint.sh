@@ -2,7 +2,6 @@
 set -e
 
 echo "[backend] Prisma generate (runtime) ..."
-# Retry generate at runtime to ensure client exists even if build-time generate was skipped
 npx prisma generate || echo "[backend] prisma generate failed, continuing (will fail at query-time if not resolved)"
 
 echo "[backend] Running prisma migrate deploy ..."
