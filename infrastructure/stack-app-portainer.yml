@@ -32,9 +32,12 @@ services:
   frontend:
     build:
       context: ../frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.mdent.cloud}
+        NEXT_PUBLIC_PORTAL_URL: ${NEXT_PUBLIC_PORTAL_URL:-https://book.mdent.cloud}
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.mdent.cloud}
-      NEXT_PUBLIC_PORTAL_URL: ${NEXT_PUBLIC_PORTAL_URL:-https://book.mdent.cloud}
+      # runtime envs are not used by Next.js client; build args above are what matter for client code
+      PORT: "3000"
     depends_on:
       - backend
     restart: unless-stopped
@@ -42,10 +45,12 @@ services:
   portal:
     build:
       context: ../portal
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.mdent.cloud}
+        NEXT_PUBLIC_CAPTCHA_KEY: ${NEXT_PUBLIC_CAPTCHA_KEY:-placeholder}
+        NEXT_PUBLIC_BOOKING_FLOW_VERSION: ${NEXT_PUBLIC_BOOKING_FLOW_VERSION:-1}
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.mdent.cloud}
-      NEXT_PUBLIC_CAPTCHA_KEY: ${NEXT_PUBLIC_CAPTCHA_KEY:-placeholder}
-      NEXT_PUBLIC_BOOKING_FLOW_VERSION: ${NEXT_PUBLIC_BOOKING_FLOW_VERSION:-1}
+      PORT: "3000"
     depends_on:
       - backend
     restart: unless-stopped
