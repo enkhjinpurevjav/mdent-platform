@@ -1,0 +1,89 @@
+# M Dent — Step-by-Step Everything (Remote-Only, Root Mode, Portainer-First)
+
+This is the single source checklist to go from zero to a running Week 1 stack (API + Internal App + Booking Portal) without local execution.
+
+Assumptions:
+- VPS: Hostinger, Ubuntu 22.04/24.04, root SSH
+- Domain: mdent.cloud
+- Subdomains: api.mdent.cloud / app.mdent.cloud / book.mdent.cloud
+
+## 0. DNS
+Create A records → VPS IP.
+Verify:
+```bash
+dig +short api.mdent.cloud
+dig +short app.mdent.cloud
+dig +short book.mdent.cloud
+```
+
+## 1. Portainer Install
+```bash
+docker volume create portainer_data
+docker run -d -p 9443:9443 --name portainer --restart=unless-stopped \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v portainer_data:/data portainer/portainer-ce:2.21.3
+```
+Open https://<server-ip>:9443 → set admin password.
+
+## 2. Stack Deploy (Repository Mode)
+Portainer → Stacks → Add stack → Repository
+- Repository URL: <your repo>
+- Reference: main
+- Compose path: infrastructure/stack-app-portainer.yml
+Environment vars (first deploy):
+- DATABASE_URL=postgresql://mdent:mdent@db:5432/mdent?schema=public
+- JWT_SECRET=<long random>
+- NODE_ENV=production
+- NEXT_PUBLIC_API_URL=https://api.mdent.cloud
+- NEXT_PUBLIC_PORTAL_URL=https://book.mdent.cloud
+- NEXT_PUBLIC_CAPTCHA_KEY=placeholder
+- NEXT_PUBLIC_BOOKING_FLOW_VERSION=1
+- RUN_SEED=true
+Deploy.
+
+## 3. Verify
+- Caddy logs: successful certificate issuance.
+- https://api.mdent.cloud/health → 200 JSON.
+- https://app.mdent.cloud → internal app skeleton.
+- https://book.mdent.cloud → portal skeleton.
+
+## 4. Disable Seed
+Edit stack → RUN_SEED=false → Update stack.
+
+## 5. Development Loop (Remote Only)
+- Edit code in GitHub (web editor / Codespaces).
+- Commit/push.
+- Portainer → Stack → Update stack (rebuild).
+- Check logs for success.
+
+## 6. Week 1 Targets
+Backend:
+- Health endpoint
+- Auth login stub
+- Public branches endpoint (seed)
+Frontend Internal:
+- Login page (stub)
+Portal:
+- Home page lists branches
+Infra:
+- Caddy TLS, Portainer-managed stack
+
+## 7. Troubleshooting
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Cert fail | DNS not propagated | Wait, verify A record, check port 80 open |
+| 502 from Caddy | Service building or failing | Check container logs in Portainer |
+| DB connect error | Wrong env or DB down | Verify DATABASE_URL, db logs |
+| Seed missing | RUN_SEED=false on first deploy | Temporarily set RUN_SEED=true, Update stack, then false again |
+
+## 8. Next Steps (Post Week 1)
+- Replace auth stub with real JWT + bcrypt.
+- Add patient & branch CRUD.
+- Begin slot engine design (Week 2).
+- Introduce staging stack (optional).
+
+## 9. Rollback
+- Revert commit in GitHub → Update stack.
+- Or adjust stack to previous tag (if using image tags later).
+
+End of master checklist.
