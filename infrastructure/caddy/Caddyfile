@@ -1,0 +1,46 @@
+{
+  email admin@mdent.cloud
+}
+
+api.mdent.cloud {
+  encode gzip
+  @health path /health
+  handle @health {
+    respond 200
+  }
+  reverse_proxy backend:8080
+  log {
+    output stdout
+    format json
+  }
+}
+
+app.mdent.cloud {
+  encode gzip
+  reverse_proxy frontend:3000
+  log {
+    output stdout
+    format json
+  }
+}
+
+book.mdent.cloud {
+  encode gzip
+  reverse_proxy portal:3000
+  log {
+    output stdout
+    format json
+  }
+}
+
+# Strongly recommended: do NOT expose Portainer publicly.
+# If you must, protect via cloud firewall allowlist and strong creds.
+# portainer.mdent.cloud {
+#   encode gzip
+#   reverse_proxy portainer:9443
+#   tls internal
+# }
+
+mdent.cloud {
+  redir https://book.mdent.cloud{uri} 308
+}
